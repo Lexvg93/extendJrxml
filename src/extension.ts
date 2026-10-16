@@ -1,7 +1,8 @@
 // The module 'vscode' contains the VS Code extensibility API
 // Import the module and reference it with the alias vscode in your code below
 import * as vscode from 'vscode';
-
+import { compileReport } from './commands/compileReport';
+import { previewReport } from './commands/previewReport';
 // This method is called when your extension is activated
 // Your extension is activated the very first time the command is executed
 export function activate(context: vscode.ExtensionContext) {
@@ -19,21 +20,9 @@ export function activate(context: vscode.ExtensionContext) {
 		vscode.window.showInformationMessage('Hello World from jasperreports-vscode!');
 	});
 
-	const compileReportCommand = vscode.commands.registerCommand('jasperreports-vscode.compileReport',
-		()=> {
-			vscode.window.showInformationMessage(
-				'Comando de compilacion preparado.'
-			);
-		}
-	);
+	const compileReportCommand = vscode.commands.registerCommand('jasperreports-vscode.compileReport',compileReport);
 
-	const previewReportCommand = vscode.commands.registerCommand('jasperreports-vscode.previewReport',
-		()=> {
-			vscode.window.showInformationMessage(
-				'Comando de previsualización preparado.'
-			);
-		}
-	);
+	const previewReportCommand = vscode.commands.registerCommand('jasperreports-vscode.previewReport',previewReport);
 
 	context.subscriptions.push(disposable, compileReportCommand, previewReportCommand);
 }
