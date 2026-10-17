@@ -1,4 +1,4 @@
-package main.java.com.jasper;
+package com.jasper;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashMap;

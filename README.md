@@ -1,71 +1,53 @@
-# jasperreports-vscode README
+# JasperReports Tools for VS Code
 
-This is the README for your extension "jasperreports-vscode". After writing up a brief description, we recommend including the following sections.
+Extensión de Visual Studio Code para trabajar con informes JasperReports desde el editor.
 
-## Features
+## Funcionalidades
 
-Describe specific features of your extension including screenshots of your extension in action. Image paths are relative to this README file.
+- **Compilar informe:** convierte un archivo `.jrxml` en un archivo `.jasper`.
+- **Previsualizar informe:** genera un PDF a partir de un archivo `.jrxml` y lo abre con la aplicación predeterminada del sistema.
 
-For example if there is an image subfolder under your extension project workspace:
+## Requisitos
 
-\!\[feature X\]\(images/feature-x.png\)
+- Visual Studio Code compatible con la versión declarada en `package.json`.
+- Java 21 instalado y accesible desde el sistema mediante el comando `java`.
+- Un archivo de informe JasperReports con extensión `.jrxml`.
 
-> Tip: Many popular extensions utilize animations. This is an excellent way to show off your extension! We recommend short, focused animations that are easy to follow.
+La extensión incluye su propio motor Java y las dependencias de JasperReports 6.21.5. No necesita el proyecto externo `libreria` ni ejecutar Maven para utilizar los comandos.
 
-## Requirements
+## Uso
 
-If you have any requirements or dependencies, add a section describing those and how to install and configure them.
+1. Abre Visual Studio Code.
+2. Abre la paleta de comandos.
+3. Ejecuta **JasperReports: Compilar informe** y selecciona un archivo `.jrxml` para generar el `.jasper`.
+4. Ejecuta **JasperReports: Previsualizar informe** y selecciona un archivo `.jrxml` para generar y abrir el PDF.
 
-## Extension Settings
+Los archivos generados se guardan junto al informe de origen, salvo que se indique otra ruta mediante el motor Java.
 
-Include if your extension adds any VS Code settings through the `contributes.configuration` extension point.
+## Desarrollo
 
-For example:
+Para compilar el código TypeScript:
 
-This extension contributes the following settings:
+```bash
+npm run compile
+```
 
-* `myExtension.enable`: Enable/disable this extension.
-* `myExtension.thing`: Set to `blah` to do something.
+Para generar el runtime Java y copiar sus dependencias:
 
-## Known Issues
+```bash
+npm run package:runtime
+```
 
-Calling out known issues can help limit users opening duplicate issues against your extension.
+Para generar el paquete instalable `.vsix`:
 
-## Release Notes
+```bash
+npm run package:vsix
+```
 
-Users appreciate release notes as you update your extension.
+## Tecnología
 
-### 1.0.0
-
-Initial release of ...
-
-### 1.0.1
-
-Fixed issue #.
-
-### 1.1.0
-
-Added features X, Y, and Z.
-
----
-
-## Following extension guidelines
-
-Ensure that you've read through the extensions guidelines and follow the best practices for creating your extension.
-
-* [Extension Guidelines](https://code.visualstudio.com/api/references/extension-guidelines)
-
-## Working with Markdown
-
-You can author your README using Visual Studio Code. Here are some useful editor keyboard shortcuts:
-
-* Split the editor (`Cmd+\` on macOS or `Ctrl+\` on Windows and Linux).
-* Toggle preview (`Shift+Cmd+V` on macOS or `Shift+Ctrl+V` on Windows and Linux).
-* Press `Ctrl+Space` (Windows, Linux, macOS) to see a list of Markdown snippets.
-
-## For more information
-
-* [Visual Studio Code's Markdown Support](http://code.visualstudio.com/docs/languages/markdown)
-* [Markdown Syntax Reference](https://help.github.com/articles/markdown-basics/)
-
-**Enjoy!**
+- TypeScript
+- Visual Studio Code Extension API
+- Java 21
+- Maven
+- JasperReports 6.21.5

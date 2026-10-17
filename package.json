@@ -2,9 +2,13 @@
   "name": "jasperreports-vscode",
   "displayName": "jasperreports-vscode",
   "description": "JasperReports tools for VS Code",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Lexvg93/extendJrxml.git"
+  },
   "version": "0.0.1",
   "engines": {
-    "vscode": "^1.139.0"
+    "vscode": "^1.140.0"
   },
   "categories": [
     "Other"
@@ -18,12 +22,12 @@
         "title": "Hello World"
       },
       {
-        "command":"jasperreports-vscode.compileReport",
-        "title":"JasperReports: Compilar informe"
+        "command": "jasperreports-vscode.compileReport",
+        "title": "JasperReports: Compilar informe"
       },
       {
-        "command":"jasperreports-vscode.previewReport",
-        "title":"JasperReports: Previsualizar informe"
+        "command": "jasperreports-vscode.previewReport",
+        "title": "JasperReports: Previsualizar informe"
       }
     ]
   },
@@ -33,17 +37,22 @@
     "watch": "tsc -watch -p ./",
     "pretest": "npm run compile && npm run lint",
     "lint": "eslint src",
-    "test": "vscode-test"
+    "test": "vscode-test",
+    "packageRuntime": "npm --prefix java exec -- mvn clean package",
+    "build:java": "mvn -f java/pom.xml clean package",
+    "package:runtime": "npm run build:java && node scripts/copy-runtime.js",
+    "package:vsix": "npm run package:runtime && npm run compile && vsce package"
   },
   "devDependencies": {
-    "@types/vscode": "^1.140.0",
     "@types/mocha": "^10.0.10",
     "@types/node": "24.x",
-    "typescript-eslint": "^8.61.1",
+    "@types/vscode": "^1.140.0",
+    "@vscode/test-cli": "^0.0.15",
+    "@vscode/test-electron": "^3.0.0",
+    "@vscode/vsce": "^4.0.0",
     "eslint": "^10.5.0",
     "typescript": "^6.0.3",
-    "@vscode/test-cli": "^0.0.15",
-    "@vscode/test-electron": "^3.0.0"
+    "typescript-eslint": "^8.61.1"
   },
   "overrides": {
     "diff": "^8.0.4",
