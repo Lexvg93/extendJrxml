@@ -8,7 +8,7 @@
   },
   "version": "0.0.1",
   "engines": {
-    "vscode": "^1.140.0"
+    "vscode": "^1.139.0"
   },
   "categories": [
     "Other"
@@ -28,6 +28,18 @@
       {
         "command": "jasperreports-vscode.previewReport",
         "title": "JasperReports: Previsualizar informe"
+      },      
+      {
+        "command": "jasperreports-vscode.inspectParameters",
+        "title": "JasperReports: Inspeccionar parámetros"
+      },
+      {
+        "command": "jasperreports-vscode.previewParameterizedReport",
+        "title": "JasperReports: Previsualizar con parámetros"
+      },
+      {
+        "command": "jasperreports-vscode.openParameterPanel",
+        "title": "JasperReports: Abrir panel de parámetros"
       }
     ]
   },

@@ -1,0 +1,171 @@
+
+/* ==================================================
+   STARK JasperReports — Panel de parámetros
+   ================================================== */
+
+:root {
+    color-scheme: light dark;
+
+    --stark-spacing: 16px;
+    --stark-radius: 6px;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    padding: var(--stark-spacing);
+
+    color: var(--vscode-foreground);
+    background-color: var(--vscode-editor-background);
+
+    font-family: var(--vscode-font-family);
+    font-size: var(--vscode-font-size);
+}
+
+.parameter-panel {
+    width: 100%;
+    max-width: 760px;
+    margin: 0 auto;
+}
+
+/* Encabezado */
+
+.panel-header {
+    margin-bottom: 24px;
+}
+
+.panel-header h1 {
+    margin: 0 0 8px;
+
+    font-size: 1.5rem;
+    font-weight: 600;
+}
+
+.panel-header p {
+    margin: 0;
+
+    color: var(--vscode-descriptionForeground);
+    line-height: 1.5;
+}
+
+/* Formulario */
+
+#parameter-form {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+#parameters-container {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+/* Mensajes */
+
+#error-message {
+    display: none;
+    margin: 0;
+    padding: 10px 12px;
+
+    color: var(--vscode-errorForeground);
+    background-color: var(--vscode-inputValidation-errorBackground);
+    border: 1px solid var(--vscode-inputValidation-errorBorder);
+    border-radius: var(--stark-radius);
+}
+
+#error-message:not(:empty) {
+    display: block;
+}
+
+/* Acciones */
+
+.panel-actions {
+    display: flex;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+    gap: 8px;
+
+    padding-top: 16px;
+    border-top: 1px solid var(--vscode-panel-border);
+}
+
+/* Botones */
+
+button {
+    min-height: 32px;
+    padding: 6px 14px;
+
+    color: var(--vscode-button-foreground);
+    background-color: var(--vscode-button-background);
+
+    border: 1px solid transparent;
+    border-radius: var(--stark-radius);
+
+    font: inherit;
+    cursor: pointer;
+}
+
+button:hover {
+    background-color: var(--vscode-button-hoverBackground);
+}
+
+button:focus-visible {
+    outline: 1px solid var(--vscode-focusBorder);
+    outline-offset: 2px;
+}
+
+#cancel-button {
+    color: var(--vscode-button-secondaryForeground);
+    background-color: var(--vscode-button-secondaryBackground);
+}
+
+#cancel-button:hover {
+    background-color: var(--vscode-button-secondaryHoverBackground);
+}
+
+button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+
+.parameter-field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 14px;
+    border: 1px solid var(--vscode-panel-border);
+    border-radius: var(--stark-radius);
+}
+
+.parameter-field label {
+    font-weight: 600;
+}
+
+.parameter-type {
+    color: var(--vscode-descriptionForeground);
+    font-size: 0.85em;
+}
+
+.parameter-field input,
+.parameter-field select {
+    width: 100%;
+    min-height: 32px;
+    padding: 6px 8px;
+    color: var(--vscode-input-foreground);
+    background-color: var(--vscode-input-background);
+    border: 1px solid var(--vscode-input-border, var(--vscode-panel-border));
+    border-radius: var(--stark-radius);
+    font: inherit;
+}
+
+.parameter-field input:focus,
+.parameter-field select:focus {
+    outline: 1px solid var(--vscode-focusBorder);
+    outline-offset: 1px;
+}

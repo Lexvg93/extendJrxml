@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JasperReports - Parametros</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <main class="parameter-panel">
+        <header class="panel-header">
+            <h1>Parámetros del informe</h1>
+            <p> Intorduce los valores necesarios para generar el informe</p>
+        </header>
+        <form id="parameter-form">
+
+            <section
+                id="parameters-container"
+                aria-label="Parámetros del informe"
+            >
+                <!-- TypeScript enviará aquí los parámetros. -->
+            </section>
+
+            <p
+                id="error-message"
+                role="alert"
+                aria-live="polite"
+            ></p>
+
+            <footer class="panel-actions">
+                <button
+                    type="button"
+                    id="cancel-button"
+                >
+                    Cancelar
+                </button>
+
+                <button
+                    type="submit"
+                    id="generate-button"
+                >
+                    Generar PDF
+                </button>
+            </footer>
+
+        </form>
+    </main>
+    <script src="main.js"></script>
+</body>
+</html>

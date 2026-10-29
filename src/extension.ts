@@ -2,7 +2,10 @@
 // Import the module and reference it with the alias vscode in your code below
 import * as vscode from 'vscode';
 import { compileReport } from './commands/compileReport';
+import { inspectParameters } from './commands/inspectParameter';
+import { previewParameterizedReport } from './commands/previewParameterizedReport';
 import { previewReport } from './commands/previewReport';
+import { openParameterPanel } from './webview/parameterPanel';
 // This method is called when your extension is activated
 // Your extension is activated the very first time the command is executed
 export function activate(context: vscode.ExtensionContext) {
@@ -24,7 +27,13 @@ export function activate(context: vscode.ExtensionContext) {
 
 	const previewReportCommand = vscode.commands.registerCommand('jasperreports-vscode.previewReport',previewReport);
 
-	context.subscriptions.push(disposable, compileReportCommand, previewReportCommand);
+	const inspectParametersCommand = vscode.commands.registerCommand('jasperreports-vscode.inspectParameters',inspectParameters);
+
+	const previewParameterizedReportCommand = vscode.commands.registerCommand('jasperreports-vscode.previewParameterizedReport',previewParameterizedReport);
+
+	const openParameterPanelCommand = vscode.commands.registerCommand('jasperreports-vscode.openParameterPanel',() => openParameterPanel(context));
+
+	context.subscriptions.push(disposable, compileReportCommand, previewReportCommand, inspectParametersCommand, previewParameterizedReportCommand,openParameterPanelCommand);
 }
 
 // This method is called when your extension is deactivated

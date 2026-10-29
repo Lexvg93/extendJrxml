@@ -1,11 +1,12 @@
 package com.jasper;
 
-import net.sf.jasperreports.engine.JRParameter;
-import net.sf.jasperreports.engine.JasperCompileManager;
-import net.sf.jasperreports.engine.JasperReport;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+
+import net.sf.jasperreports.engine.JRParameter;
+import net.sf.jasperreports.engine.JasperCompileManager;
+import net.sf.jasperreports.engine.JasperReport;
 
 public class JasperParameterInspector {
 
@@ -16,6 +17,7 @@ public class JasperParameterInspector {
                 "Uso: java JasperParameterInspector <informe.jrxml>"
             );
             System.exit(1);
+            return;
         }
 
         Path archivoJrxml = Path.of(args[0]).toAbsolutePath();
@@ -25,6 +27,7 @@ public class JasperParameterInspector {
                 "No existe el archivo: " + archivoJrxml
             );
             System.exit(1);
+            return;
         }
 
         try {
@@ -33,7 +36,11 @@ public class JasperParameterInspector {
                     archivoJrxml.toString()
                 );
 
-            System.out.println("Parámetros del informe:");
+            StringBuilder json = new StringBuilder();
+
+            json.append("{");
+            json.append("\"success\":true,");
+            json.append("\"parameters\":[");
 
             int cantidad = 0;
 
@@ -43,18 +50,29 @@ public class JasperParameterInspector {
                     continue;
                 }
 
-                System.out.println(
-                    "Nombre: " + parametro.getName()
-                    + " | Tipo: "
-                    + parametro.getValueClassName()
-                );
+                if (cantidad > 0) {
+                    json.append(",");
+                }
+
+                json.append("{");
+                json.append("\"name\":\"")
+                    .append(escaparJson(parametro.getName()))
+                    .append("\",");
+
+                json.append("\"type\":\"")
+                    .append(escaparJson(parametro.getValueClassName()))
+                    .append("\"");
+
+                json.append("}");
 
                 cantidad++;
             }
 
-            System.out.println(
-                "Total de parámetros de usuario: " + cantidad
-            );
+            json.append("],");
+            json.append("\"total\":").append(cantidad);
+            json.append("}");
+
+            System.out.println(json);
 
         } catch (Exception e) {
             System.err.println(
@@ -63,5 +81,21 @@ public class JasperParameterInspector {
             System.err.println(e.getMessage());
             System.exit(1);
         }
+    }
+
+    private static String escaparJson(String valor) {
+
+        if (valor == null) {
+            return "";
+        }
+
+        return valor
+            .replace("\\", "\\\\")
+            .replace("\"", "\\\"")
+            .replace("\b", "\\b")
+            .replace("\f", "\\f")
+            .replace("\n", "\\n")
+            .replace("\r", "\\r")
+            .replace("\t", "\\t");
     }
 }
