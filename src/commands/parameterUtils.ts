@@ -5,6 +5,7 @@ import * as path from 'node:path';
 export interface JasperParameter {
     name: string;
     type: string;
+    hasDefaultValue: boolean;
 }
 
 interface JasperParameterResult {

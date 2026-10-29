@@ -61,7 +61,10 @@ public class JasperParameterInspector {
 
                 json.append("\"type\":\"")
                     .append(escaparJson(parametro.getValueClassName()))
-                    .append("\"");
+                    .append("\",");
+
+                json.append("\"hasDefaultValue\":")
+                    .append(parametro.getDefaultValueExpression() != null);
 
                 json.append("}");
 

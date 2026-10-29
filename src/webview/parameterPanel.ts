@@ -1,17 +1,18 @@
+
 import { randomBytes } from 'node:crypto';
 import * as fs from 'node:fs/promises';
+import * as path from 'node:path';
 import * as vscode from 'vscode';
+
 import {
     inspectParametersForReport,
     type JasperParameter
 } from '../commands/parameterUtils';
+
 import {
     generateParameterizedPdf,
     type ParameterValue
 } from '../commands/parameterizedReportService';
-
-import * as path from 'node:path';
-
 
 export async function openParameterPanel(
     context: vscode.ExtensionContext
@@ -70,111 +71,132 @@ export async function openParameterPanel(
     let inspeccionIniciada = false;
     let parametrosInforme: JasperParameter[] = [];
 
-    
-panel.webview.onDidReceiveMessage(async (mensaje) => {
-    if (mensaje.command === 'ready') {
-        if (inspeccionIniciada) {
+    panel.webview.onDidReceiveMessage(async (mensaje) => {
+        if (mensaje.command === 'ready') {
+            if (inspeccionIniciada) {
+                return;
+            }
+
+            inspeccionIniciada = true;
+
+            try {
+                const parametros =
+                    await inspectParametersForReport(rutaJrxml);
+
+                parametrosInforme = parametros;
+
+                await panel.webview.postMessage({
+                    command: 'showParameters',
+                    parameters: parametros
+                });
+
+                if (parametros.length === 0) {
+                    await panel.webview.postMessage({
+                        command: 'showError',
+                        message:
+                            'El informe no contiene parámetros de usuario.'
+                    });
+                }
+            } catch (error) {
+                const detalle = error instanceof Error
+                    ? error.message
+                    : String(error);
+
+                await panel.webview.postMessage({
+                    command: 'showError',
+                    message:
+                        `No se pudieron inspeccionar los parámetros: ${detalle}`
+                });
+            }
+
             return;
         }
 
-        inspeccionIniciada = true;
-
-        try {
-            const parametros = await inspectParametersForReport(rutaJrxml);
-            parametrosInforme = parametros;
-
-            await panel.webview.postMessage({
-                command: 'showParameters',
-                parameters: parametros
-            });
-
-            if (parametros.length === 0) {
-                await panel.webview.postMessage({
-                    command: 'showError',
-                    message: 'El informe no contiene parámetros de usuario.'
-                });
-            }
-        } catch (error) {
-            const detalle = error instanceof Error
-                ? error.message
-                : String(error);
-
-            await panel.webview.postMessage({
-                command: 'showError',
-                message: `No se pudieron inspeccionar los parámetros: ${detalle}`
-            });
+        if (mensaje.command === 'cancel') {
+            panel.dispose();
+            return;
         }
 
-        return;
-    }
-
-    if (mensaje.command === 'cancel') {
-        panel.dispose();
-        return;
-    }
-
-    if (mensaje.command === 'generatePdf') {
-        try {
-            if (
-                mensaje.values === null ||
-                typeof mensaje.values !== 'object' ||
-                Array.isArray(mensaje.values)
-            ) {
-                throw new Error('Los valores recibidos no son válidos.');
-            }
-
-            const valores: Record<string, ParameterValue> = {};
-
-            for (const [nombre, valor] of Object.entries(mensaje.values)) {
-                if (typeof valor !== 'string') {
+        if (mensaje.command === 'generatePdf') {
+            try {
+                if (
+                    mensaje.values === null ||
+                    typeof mensaje.values !== 'object' ||
+                    Array.isArray(mensaje.values)
+                ) {
                     throw new Error(
-                        `El valor del parámetro ${nombre} no es válido.`
+                        'Los valores recibidos no son válidos.'
                     );
                 }
 
-                const parametro = parametrosInforme.find(
-                    (elemento) => elemento.name === nombre
-                );
+                const valores: Record<string, ParameterValue> = {};
 
-                if (!parametro) {
-                    throw new Error(`Parámetro desconocido: ${nombre}`);
+                for (
+                    const [nombre, valor]
+                    of Object.entries(mensaje.values)
+                ) {
+                    if (typeof valor !== 'string') {
+                        throw new Error(
+                            `El valor del parámetro ${nombre} no es válido.`
+                        );
+                    }
+
+                    const parametro = parametrosInforme.find(
+                        (elemento) => elemento.name === nombre
+                    );
+
+                    if (!parametro) {
+                        throw new Error(
+                            `Parámetro desconocido: ${nombre}`
+                        );
+                    }
+
+                    // Si está vacío y tiene valor predeterminado,
+                    // no lo enviamos para que JasperReports lo aplique.
+                    if (
+                        valor.trim() === '' &&
+                        parametro.hasDefaultValue
+                    ) {
+                        continue;
+                    }
+
+                    valores[nombre] = convertirValorPanel(
+                        valor,
+                        parametro.type,
+                        nombre
+                    );
                 }
 
-                valores[nombre] = convertirValorPanel(
-                    valor,
-                    parametro.type,
-                    nombre
+                const rutaPdf = await generateParameterizedPdf(
+                    rutaJrxml,
+                    valores
                 );
+
+                await vscode.env.openExternal(
+                    vscode.Uri.file(rutaPdf)
+                );
+
+                await panel.webview.postMessage({
+                    command: 'showSuccess',
+                    message: `PDF generado: ${path.basename(rutaPdf)}`
+                });
+
+                vscode.window.showInformationMessage(
+                    `PDF generado: ${path.basename(rutaPdf)}`
+                );
+            } catch (error) {
+                const detalle = error instanceof Error
+                    ? error.message
+                    : String(error);
+
+                await panel.webview.postMessage({
+                    command: 'showError',
+                    message:
+                        `No se pudo generar el PDF: ${detalle}`
+                });
             }
-
-            const rutaPdf = await generateParameterizedPdf(
-                rutaJrxml,
-                valores
-            );
-
-            await vscode.env.openExternal(vscode.Uri.file(rutaPdf));
-
-            await panel.webview.postMessage({
-                command: 'showSuccess',
-                message: `PDF generado: ${path.basename(rutaPdf)}`
-            });
-
-            vscode.window.showInformationMessage(
-                `PDF generado: ${path.basename(rutaPdf)}`
-            );
-        } catch (error) {
-            const detalle = error instanceof Error
-                ? error.message
-                : String(error);
-
-            await panel.webview.postMessage({
-                command: 'showError',
-                message: `No se pudo generar el PDF: ${detalle}`
-            });
         }
-    }
-});
-
+    });
 
     try {
         const html = await fs.readFile(htmlPath.fsPath, 'utf8');
@@ -246,11 +268,17 @@ function prepararHtml(
     `;
 
     if (resultado.includes('</head>')) {
-        resultado = resultado.replace('</head>', `${politica}\n</head>`);
+        resultado = resultado.replace(
+            '</head>',
+            `${politica}\n</head>`
+        );
     }
 
     if (resultado.includes('</body>')) {
-        resultado = resultado.replace('</body>', `${recursos}\n</body>`);
+        resultado = resultado.replace(
+            '</body>',
+            `${recursos}\n</body>`
+        );
     }
 
     return resultado;
@@ -264,9 +292,6 @@ function escaparHtml(texto: string): string {
         .replace(/"/g, '&quot;')
         .replace(/'/g, '&#39;');
 }
-
-
-
 
 function convertirValorPanel(
     valor: string,
@@ -286,38 +311,75 @@ function convertirValorPanel(
         case 'java.lang.Byte': {
             const numero = Number(valor);
 
-            if (!Number.isInteger(numero)) {
+            if (!Number.isSafeInteger(numero)) {
                 throw new Error(
-                    `El parámetro ${nombre} debe ser un número entero.`
+                    `El parámetro ${nombre} debe ser un número entero válido.`
                 );
             }
 
-            if (tipo === 'java.lang.Byte' &&
-                (numero < -128 || numero > 127)) {
-                throw new Error(`El parámetro ${nombre} debe estar entre -128 y 127.`);
+            if (
+                tipo === 'java.lang.Byte' &&
+                (numero < -128 || numero > 127)
+            ) {
+                throw new Error(
+                    `El parámetro ${nombre} debe estar entre -128 y 127.`
+                );
             }
 
-            if (tipo === 'java.lang.Short' &&
-                (numero < -32768 || numero > 32767)) {
-                throw new Error(`El parámetro ${nombre} está fuera del rango Short.`);
+            if (
+                tipo === 'java.lang.Short' &&
+                (numero < -32768 || numero > 32767)
+            ) {
+                throw new Error(
+                    `El parámetro ${nombre} está fuera del rango Short.`
+                );
             }
 
-            if (tipo === 'java.lang.Integer' &&
-                (numero < -2147483648 || numero > 2147483647)) {
-                throw new Error(`El parámetro ${nombre} está fuera del rango Integer.`);
+            if (
+                tipo === 'java.lang.Integer' &&
+                (numero < -2147483648 || numero > 2147483647)
+            ) {
+                throw new Error(
+                    `El parámetro ${nombre} está fuera del rango Integer.`
+                );
             }
 
             return numero;
         }
 
-        case 'java.lang.Long':
-        case 'java.lang.Double':
-        case 'java.lang.Float': {
+        case 'java.lang.Long': {
+            const numero = Number(valor);
+
+            if (!Number.isSafeInteger(numero)) {
+                throw new Error(
+                    `El parámetro ${nombre} debe ser un entero dentro del rango seguro de JavaScript.`
+                );
+            }
+
+            return numero;
+        }
+
+        case 'java.lang.Double': {
             const numero = Number(valor);
 
             if (!Number.isFinite(numero)) {
                 throw new Error(
                     `El parámetro ${nombre} debe ser un número válido.`
+                );
+            }
+
+            return numero;
+        }
+
+        case 'java.lang.Float': {
+            const numero = Number(valor);
+
+            if (
+                !Number.isFinite(numero) ||
+                Math.abs(numero) > 3.4028235e38
+            ) {
+                throw new Error(
+                    `El parámetro ${nombre} está fuera del rango permitido para Float.`
                 );
             }
 
@@ -342,4 +404,3 @@ function convertirValorPanel(
             );
     }
 }
-
