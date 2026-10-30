@@ -1,0 +1,120 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>STARK JasperReports Designer</title>
+
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+
+    <div id="designer-container">
+
+        <!-- Barra superior -->
+        <header id="designer-toolbar">
+            <div class="toolbar-brand">
+                STARK JasperReports
+            </div>
+
+            <div class="toolbar-document">
+                Nuevo informe
+            </div>
+
+            <div class="toolbar-actions">
+                <button id="save-button">
+                    Guardar
+                </button>
+            </div>
+        </header>
+
+        <!-- Área principal del diseñador -->
+        <main id="designer-workspace">
+
+            <!-- Panel izquierdo -->
+            <aside id="elements-panel">
+                <h2>Elementos</h2>
+
+                <div id="elements-list">
+                    <div class="element-item">
+                        Texto estático
+                    </div>
+
+                    <div class="element-item">
+                        Campo de texto
+                    </div>
+
+                    <div class="element-item">
+                        Campo de datos
+                    </div>
+
+                    <div class="element-item">
+                        Imagen
+                    </div>
+
+                    <div class="element-item">
+                        Línea
+                    </div>
+
+                    <div class="element-item">
+                        Rectángulo
+                    </div>
+                </div>
+            </aside>
+
+            <!-- Panel central -->
+            <section id="canvas-panel">
+
+                <div id="canvas-toolbar">
+                    <span>Diseñador de informes</span>
+
+                    <span id="zoom-level">
+                        100%
+                    </span>
+                </div>
+
+                <div id="canvas-container">
+
+                    <div id="report-page">
+
+                        <div id="report-title-band">
+                            <span>
+                                Title
+                            </span>
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </section>
+
+            <!-- Panel derecho -->
+            <aside id="properties-panel">
+
+                <h2>Propiedades</h2>
+
+                <div id="properties-content">
+                    <p>
+                        Selecciona un elemento para editar
+                        sus propiedades.
+                    </p>
+                </div>
+
+            </aside>
+
+        </main>
+
+    </div>
+
+    <script src="jrxmlParser.js"></script>
+    <script src="main.js"></script>
+</body>
+</html>

@@ -15,34 +15,47 @@
   ],
   "activationEvents": [],
   "main": "./out/extension.js",
-  "contributes": {
-    "commands": [
-      {
-        "command": "jasperreports-vscode.helloWorld",
-        "title": "Hello World"
-      },
-      {
-        "command": "jasperreports-vscode.compileReport",
-        "title": "JasperReports: Compilar informe"
-      },
-      {
-        "command": "jasperreports-vscode.previewReport",
-        "title": "JasperReports: Previsualizar informe"
-      },      
-      {
-        "command": "jasperreports-vscode.inspectParameters",
-        "title": "JasperReports: Inspeccionar parámetros"
-      },
-      {
-        "command": "jasperreports-vscode.previewParameterizedReport",
-        "title": "JasperReports: Previsualizar con parámetros"
-      },
-      {
-        "command": "jasperreports-vscode.openParameterPanel",
-        "title": "JasperReports: Abrir panel de parámetros"
-      }
-    ]
-  },
+  
+"contributes": {
+  "commands": [
+    {
+      "command": "jasperreports-vscode.helloWorld",
+      "title": "Hello World"
+    },
+    {
+      "command": "jasperreports-vscode.compileReport",
+      "title": "JasperReports: Compilar informe"
+    },
+    {
+      "command": "jasperreports-vscode.previewReport",
+      "title": "JasperReports: Previsualizar informe"
+    },
+    {
+      "command": "jasperreports-vscode.inspectParameters",
+      "title": "JasperReports: Inspeccionar parámetros"
+    },
+    {
+      "command": "jasperreports-vscode.previewParameterizedReport",
+      "title": "JasperReports: Previsualizar con parámetros"
+    },
+    {
+      "command": "jasperreports-vscode.openParameterPanel",
+      "title": "JasperReports: Abrir panel de parámetros"
+    }
+  ],
+  "customEditors": [
+    {
+      "viewType": "stark.jasperDesigner",
+      "displayName": "STARK JasperReports Designer",
+      "selector": [
+        {
+          "filenamePattern": "*.jrxml"
+        }
+      ],
+      "priority": "option"
+    }
+  ]
+},
   "scripts": {
     "vscode:prepublish": "npm run compile",
     "compile": "tsc -p ./",

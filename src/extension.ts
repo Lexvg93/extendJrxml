@@ -5,6 +5,7 @@ import { compileReport } from './commands/compileReport';
 import { inspectParameters } from './commands/inspectParameter';
 import { previewParameterizedReport } from './commands/previewParameterizedReport';
 import { previewReport } from './commands/previewReport';
+import { DesignerProvider } from './webview/designer/designerProvider';
 import { openParameterPanel } from './webview/parameterPanel';
 // This method is called when your extension is activated
 // Your extension is activated the very first time the command is executed
@@ -33,7 +34,17 @@ export function activate(context: vscode.ExtensionContext) {
 
 	const openParameterPanelCommand = vscode.commands.registerCommand('jasperreports-vscode.openParameterPanel',() => openParameterPanel(context));
 
-	context.subscriptions.push(disposable, compileReportCommand, previewReportCommand, inspectParametersCommand, previewParameterizedReportCommand,openParameterPanelCommand);
+	const designerProvider = DesignerProvider.register(context);
+
+	context.subscriptions.push(
+    disposable,
+    compileReportCommand,
+    previewReportCommand,
+    inspectParametersCommand,
+    previewParameterizedReportCommand,
+    openParameterPanelCommand,
+    designerProvider
+);
 }
 
 // This method is called when your extension is deactivated

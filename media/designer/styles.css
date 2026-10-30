@@ -1,0 +1,201 @@
+
+/* ========================================
+   STARK JASPERREPORTS DESIGNER
+   ======================================== */
+
+:root {
+    --panel-border: var(--vscode-panel-border);
+    --panel-background: var(--vscode-sideBar-background);
+    --editor-background: var(--vscode-editor-background);
+    --foreground: var(--vscode-foreground);
+    --accent: var(--vscode-focusBorder);
+    --button-background: var(--vscode-button-background);
+    --button-foreground: var(--vscode-button-foreground);
+}
+
+/* Configuración general */
+
+* {
+    box-sizing: border-box;
+}
+
+html,
+body {
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+}
+
+body {
+    font-family: var(--vscode-font-family);
+    font-size: var(--vscode-font-size);
+    color: var(--foreground);
+    background: var(--editor-background);
+}
+
+/* Contenedor principal */
+
+#designer-container {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    height: 100vh;
+}
+
+/* ========================================
+   BARRA SUPERIOR
+   ======================================== */
+
+#designer-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    min-height: 42px;
+    padding: 0 12px;
+    border-bottom: 1px solid var(--panel-border);
+    background: var(--panel-background);
+}
+
+.toolbar-brand {
+    font-weight: bold;
+}
+
+.toolbar-document {
+    opacity: 0.8;
+}
+
+.toolbar-actions {
+    display: flex;
+    gap: 8px;
+}
+
+button {
+    padding: 5px 12px;
+    color: var(--button-foreground);
+    background: var(--button-background);
+    border: none;
+    border-radius: 3px;
+    cursor: pointer;
+}
+
+/* ========================================
+   ÁREA PRINCIPAL
+   ======================================== */
+
+#designer-workspace {
+    display: grid;
+    grid-template-columns: 190px minmax(0, 1fr) 250px;
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+}
+
+/* ========================================
+   PANEL IZQUIERDO
+   ======================================== */
+
+#elements-panel {
+    padding: 12px;
+    overflow-y: auto;
+    background: var(--panel-background);
+    border-right: 1px solid var(--panel-border);
+}
+
+#elements-panel h2,
+#properties-panel h2 {
+    margin-top: 0;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+#elements-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.element-item {
+    padding: 9px;
+    border: 1px solid var(--panel-border);
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.element-item:hover {
+    border-color: var(--accent);
+    background: var(--vscode-list-hoverBackground);
+}
+
+/* ========================================
+   PANEL CENTRAL
+   ======================================== */
+
+#canvas-panel {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    overflow: hidden;
+}
+
+#canvas-toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    min-height: 36px;
+    padding: 0 12px;
+    border-bottom: 1px solid var(--panel-border);
+}
+
+#canvas-container {
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    flex: 1;
+    min-height: 0;
+    padding: 30px;
+    overflow: auto;
+    background: var(--editor-background);
+}
+
+/* ========================================
+   PÁGINA DEL INFORME
+   ======================================== */
+
+#report-page {
+    width: 595px;
+    min-width: 595px;
+    height: 842px;
+    background: white;
+    color: #222222;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.35);
+    padding: 20px;
+}
+
+#report-title-band {
+    position: relative;
+    width: 100%;
+    height: 80px;
+    border: 1px dashed #999999;
+    background: #fafafa;
+    color: #555555;
+    font-size: 11px;
+    padding: 5px;
+}
+
+/* ========================================
+   PANEL DERECHO
+   ======================================== */
+
+#properties-panel {
+    padding: 12px;
+    overflow-y: auto;
+    background: var(--panel-background);
+    border-left: 1px solid var(--panel-border);
+}
+
+#properties-content {
+    font-size: 12px;
+    opacity: 0.8;
+}
