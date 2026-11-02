@@ -15,6 +15,8 @@
     let selectedElementData = null;
     // Banda actualmente seleccionada
     let selectedBandData = null;
+    // ESTADO DEL ARRASTRE
+    let dragState = null;
 
 
     // SOLICITUD DE GUARDADO
@@ -317,10 +319,11 @@
         }
     }
 
-    // SELECCIÓN DE ELEMENTOS EN EL LIENZO
-    bandsContainer.addEventListener("click", event => {
-        console.log("STARK Kraken: evento de clic ejecutado");
-        const target = event.target;
+    
+    // SELECCIONAR UN ELEMENTO DEL LIENZO
+    function selectElement(target) {
+
+        console.log("STARK Kraken: evento de selección ejecutado");
 
         if (!(target instanceof Element)) {
             return;
@@ -364,14 +367,18 @@
         if (!elementData) {
             return;
         }
+
         // Guardar el elemento actualmente seleccionado.
         selectedElementData = elementData;
-        // Guardar la banda a la que pertenece el elemento.
+
+        // Guardar la banda correspondiente.
         selectedBandData = bandData;
+
         console.log(
             "STARK Kraken: banda seleccionada",
             selectedBandData
         );
+
         console.log(
             "STARK Kraken: elemento activo",
             selectedElementData
@@ -382,17 +389,124 @@
             element.classList.remove("selected");
         });
 
-        // Resaltar el elemento actual.
+        // Resaltar elemento actual.
         selectedElement.classList.add("selected");
 
-        // Actualizar el panel derecho.
+        // Actualizar inspector.
         displayElementProperties(elementData, bandName);
 
         console.log(
             "STARK Kraken: elemento seleccionado",
             elementData
         );
+    }
+
+    // SELECCIÓN DE ELEMENTOS EN EL LIENZO
+    bandsContainer.addEventListener("click", event => {
+        selectElement(event.target);
     });
+
+    // INICIAR ARRASTRE DE ELEMENTOS
+    bandsContainer.addEventListener("pointerdown", event => {
+
+        if (!(event.target instanceof Element)) {
+            return;
+        }
+
+        const element = event.target.closest(".jr-element");
+
+        if (!element || !currentReport) {
+            return;
+        }
+
+        // Seleccionar el elemento antes de iniciar el arrastre.
+        selectElement(element);
+
+        if (!selectedElementData || !selectedBandData) {
+            return;
+        }
+
+        // Registrar el estado inicial del movimiento.
+        dragState = {
+            element: element,
+            pointerId: event.pointerId,
+            startPointerX: event.clientX,
+            startPointerY: event.clientY,
+
+            startElementX: selectedElementData.x,
+            startElementY: selectedElementData.y
+        };
+
+        // Capturar el puntero durante el arrastre.
+        element.setPointerCapture(event.pointerId);
+
+        console.log(
+            "STARK Kraken: inicio de arrastre",
+            dragState
+        );
+
+    });
+    
+    // ACTUALIZAR POSICIÓN DURANTE EL ARRASTRE
+    bandsContainer.addEventListener("pointermove", event => {
+
+        if (!dragState || !selectedElementData || !selectedBandData) {
+            return;
+        }
+
+        const deltaX = event.clientX - dragState.startPointerX;
+        const deltaY = event.clientY - dragState.startPointerY;
+
+        // Calcular nuevas coordenadas.
+        const newX = Math.round(dragState.startElementX + deltaX);
+        const newY = Math.round(dragState.startElementY + deltaY);
+
+        // Calcular límites permitidos.
+        const maxX = currentReport.page.columnWidth - selectedElementData.width;
+        const maxY = selectedBandData.height - selectedElementData.height;
+
+        // Impedir que el elemento salga de la columna o banda.
+        const boundedX = Math.max(0, Math.min(newX, maxX));
+        const boundedY = Math.max(0, Math.min(newY, maxY));
+
+        // Actualizar modelo.
+        selectedElementData.x = boundedX;
+        selectedElementData.y = boundedY;
+
+        // Actualizar representación visual.
+        window.StarkDesignerRenderer.updateElement(selectedElementData);
+
+    });
+
+    // FINALIZAR ARRASTRE DE ELEMENTOS
+    window.addEventListener("pointerup", event => {
+
+        if (!dragState || event.pointerId !== dragState.pointerId) {
+            return;
+        }
+
+        console.log(
+            "STARK Kraken: arrastre finalizado",
+            selectedElementData
+        );
+
+        dragState = null;
+
+    });
+
+    window.addEventListener("pointercancel", event => {
+
+        if (!dragState || event.pointerId !== dragState.pointerId) {
+            return;
+        }
+
+        dragState = null;
+
+        console.log("STARK Kraken: arrastre cancelado");
+
+    });
+
+
 
     // MENSAJES RECIBIDOS DESDE VS CODE
     window.addEventListener("message", event => {
