@@ -8,6 +8,7 @@
     const saveButton = document.getElementById("save-button");
     const propertiesContent = document.getElementById("properties-content");
     const bandsContainer = document.getElementById("report-bands");
+    const elementsList = document.getElementById("elements-list");
 
     // Informe actualmente cargado
     let currentReport = null;
@@ -17,6 +18,8 @@
     let selectedBandData = null;
     // ESTADO DEL ARRASTRE
     let dragState = null;
+    // ESTADO DEL REDIMENSIONAMIENTO
+    let resizeState = null;
 
 
     // SOLICITUD DE GUARDADO
@@ -401,6 +404,73 @@
         );
     }
 
+    // INICIAR ARRASTRE DESDE LA PALETA
+    elementsList.addEventListener("dragstart", event => {
+
+        const element = event.target.closest(".element-item");
+
+        if (!element) {
+            return;
+        }
+
+        const elementType = element.dataset.elementType;
+
+        if (!elementType) {
+            return;
+        }
+
+        event.dataTransfer.setData(
+            "application/stark-element",
+            elementType
+        );
+
+        event.dataTransfer.effectAllowed = "copy";
+
+        console.log(
+            "STARK Kraken: componente preparado para arrastrar",
+            elementType
+        );
+
+    });
+
+    // PERMITIR SOLTAR COMPONENTES SOBRE LAS BANDAS
+    bandsContainer.addEventListener("dragover", event => {
+
+        event.preventDefault();
+
+        event.dataTransfer.dropEffect = "copy";
+
+    });
+
+    // DETECTAR CUANDO SE SUELTA UN COMPONENTE
+    bandsContainer.addEventListener("drop", event => {
+
+        event.preventDefault();
+
+        const elementType = event.dataTransfer.getData(
+            "application/stark-element"
+        );
+
+        if (!elementType) {
+            return;
+        }
+
+        const band = event.target.closest(".jr-band");
+
+        if (!band) {
+            return;
+        }
+
+        console.log(
+            "STARK Kraken: componente soltado",
+            {
+                type: elementType,
+                bandName: band.dataset.name,
+                bandIndex: band.dataset.index
+            }
+        );
+
+    });
     // SELECCIÓN DE ELEMENTOS EN EL LIENZO
     bandsContainer.addEventListener("click", event => {
         selectElement(event.target);
@@ -410,6 +480,51 @@
     bandsContainer.addEventListener("pointerdown", event => {
 
         if (!(event.target instanceof Element)) {
+            return;
+        }
+
+        // Detectar si se ha pulsado un controlador de Resize.
+        const handle = event.target.closest(".resize-handle");
+
+        if (handle) {
+
+            const element = handle.closest(".jr-element");
+
+            if (!element || !currentReport) {
+                return;
+            }
+
+            selectElement(element);
+
+            if (!selectedElementData || !selectedBandData) {
+                return;
+            }
+
+            resizeState = {
+                element: element,
+                handle: handle,
+                direction: Array.from(handle.classList).find(
+                    position => [
+                        "nw", "n", "ne", "e",
+                        "se", "s", "sw", "w"
+                    ].includes(position)
+                ),
+                pointerId: event.pointerId,
+                startPointerX: event.clientX,
+                startPointerY: event.clientY,
+                startElementX: selectedElementData.x,
+                startElementY: selectedElementData.y,
+                startWidth: selectedElementData.width,
+                startHeight: selectedElementData.height
+            };
+
+            handle.setPointerCapture(event.pointerId);
+
+            console.log(
+                "STARK Kraken: inicio de Resize",
+                resizeState
+            );
+
             return;
         }
 
@@ -450,6 +565,113 @@
     // ACTUALIZAR POSICIÓN DURANTE EL ARRASTRE
     bandsContainer.addEventListener("pointermove", event => {
 
+        // ========================================
+        // REDIMENSIONAMIENTO
+        // ========================================
+
+        if (resizeState) {
+
+            if (event.pointerId !== resizeState.pointerId) {
+                return;
+            }
+
+            const deltaX = event.clientX - resizeState.startPointerX;
+            const deltaY = event.clientY - resizeState.startPointerY;
+
+            let newX = resizeState.startElementX;
+            let newY = resizeState.startElementY;
+            let newWidth = resizeState.startWidth;
+            let newHeight = resizeState.startHeight;
+
+            const direction = resizeState.direction;
+
+            // Controladores del lado izquierdo.
+            if (direction.includes("w")) {
+                newX = resizeState.startElementX + deltaX;
+                newWidth = resizeState.startWidth - deltaX;
+            }
+
+            // Controladores del lado derecho.
+            if (direction.includes("e")) {
+                newWidth = resizeState.startWidth + deltaX;
+            }
+
+            // Controladores del lado superior.
+            if (direction.includes("n")) {
+                newY = resizeState.startElementY + deltaY;
+                newHeight = resizeState.startHeight - deltaY;
+            }
+
+            // Controladores del lado inferior.
+            if (direction.includes("s")) {
+                newHeight = resizeState.startHeight + deltaY;
+            }
+
+            // ========================================
+            // VALIDAR DIMENSIONES MÍNIMAS
+            // ========================================
+
+            if (newWidth < 1 || newHeight < 1) {
+                return;
+            }
+
+            // ========================================
+            // VALIDAR LÍMITES DE LA COLUMNA Y BANDA
+            // ========================================
+
+            const exceedsColumn =
+                newX < 0 ||
+                newX + newWidth > currentReport.page.columnWidth;
+
+            const exceedsBand =
+                newY < 0 ||
+                newY + newHeight > selectedBandData.height;
+
+            if (exceedsColumn || exceedsBand) {
+                return;
+            }
+
+            // ========================================
+            // ACTUALIZAR MODELO
+            // ========================================
+
+            selectedElementData.x = Math.round(newX);
+            selectedElementData.y = Math.round(newY);
+            selectedElementData.width = Math.round(newWidth);
+            selectedElementData.height = Math.round(newHeight);
+
+            // SINCRONIZAR INSPECTOR DE PROPIEDADES
+            const geometryValues = {
+                "element-x": selectedElementData.x,
+                "element-y": selectedElementData.y,
+                "element-width": selectedElementData.width,
+                "element-height": selectedElementData.height
+            };
+
+            for (const [fieldId, value] of Object.entries(geometryValues)) {
+
+                const input = document.getElementById(fieldId);
+
+                if (input) {
+                    input.value = String(value);
+                }
+            }
+
+            // ========================================
+            // ACTUALIZAR REPRESENTACIÓN VISUAL
+            // ========================================
+
+            window.StarkDesignerRenderer.updateElement(
+                selectedElementData
+            );
+
+            return;
+        }
+
+        // ========================================
+        // DRAG & DROP EXISTENTE
+        // ========================================
+
         if (!dragState || !selectedElementData || !selectedBandData) {
             return;
         }
@@ -457,29 +679,36 @@
         const deltaX = event.clientX - dragState.startPointerX;
         const deltaY = event.clientY - dragState.startPointerY;
 
-        // Calcular nuevas coordenadas.
         const newX = Math.round(dragState.startElementX + deltaX);
         const newY = Math.round(dragState.startElementY + deltaY);
 
-        // Calcular límites permitidos.
         const maxX = currentReport.page.columnWidth - selectedElementData.width;
         const maxY = selectedBandData.height - selectedElementData.height;
 
-        // Impedir que el elemento salga de la columna o banda.
         const boundedX = Math.max(0, Math.min(newX, maxX));
         const boundedY = Math.max(0, Math.min(newY, maxY));
 
-        // Actualizar modelo.
         selectedElementData.x = boundedX;
         selectedElementData.y = boundedY;
 
-        // Actualizar representación visual.
         window.StarkDesignerRenderer.updateElement(selectedElementData);
 
     });
 
     // FINALIZAR ARRASTRE DE ELEMENTOS
     window.addEventListener("pointerup", event => {
+        
+        if (resizeState && event.pointerId === resizeState.pointerId) {
+
+            console.log(
+                "STARK Kraken: Resize finalizado",
+                selectedElementData
+            );
+
+            resizeState = null;
+
+            return;
+        }
 
         if (!dragState || event.pointerId !== dragState.pointerId) {
             return;
@@ -495,6 +724,15 @@
     });
 
     window.addEventListener("pointercancel", event => {
+
+        if (resizeState && event.pointerId === resizeState.pointerId) {
+
+            resizeState = null;
+
+            console.log("STARK Kraken: Resize cancelado");
+
+            return;
+        }
 
         if (!dragState || event.pointerId !== dragState.pointerId) {
             return;

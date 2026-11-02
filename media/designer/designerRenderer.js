@@ -25,6 +25,33 @@
         return element;
     }
 
+    /**
+    * Crea los ocho controladores de redimensionamiento.
+    */
+    function createResizeHandles(element) {
+
+        const positions = [
+            "nw",
+            "n",
+            "ne",
+            "e",
+            "se",
+            "s",
+            "sw",
+            "w"
+        ];
+
+        positions.forEach(position => {
+
+            const handle = createElement(
+                "div",
+                `resize-handle ${position}`
+            );
+
+            element.appendChild(handle);
+
+        });
+    }
 
     /**
      * Representa visualmente un elemento JRXML.
@@ -88,6 +115,9 @@
         }
 
         element.textContent = displayText;
+
+        // Crear controladores de redimensionamiento.
+        createResizeHandles(element);
 
         // Mostrar el contenido completo al pasar el cursor.
         element.title = displayText;

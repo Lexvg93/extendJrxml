@@ -315,13 +315,42 @@ export class DesignerProvider
                 <h2>Elementos</h2>
 
                 <div id="elements-list">
-                    <div class="element-item">Texto estático</div>
-                    <div class="element-item">Campo de texto</div>
-                    <div class="element-item">Campo de datos</div>
-                    <div class="element-item">Imagen</div>
-                    <div class="element-item">Línea</div>
-                    <div class="element-item">Rectángulo</div>
-                </div>
+                        <div class="element-item"
+                            data-element-type="staticText"
+                            draggable="true">
+                            Texto estático
+                        </div>
+
+                        <div class="element-item"
+                            data-element-type="textField"
+                            draggable="true">
+                            Campo de texto
+                        </div>
+
+                        <div class="element-item"
+                            data-element-type="field"
+                            draggable="true">
+                            Campo de datos
+                        </div>
+
+                        <div class="element-item"
+                            data-element-type="image"
+                            draggable="true">
+                            Imagen
+                        </div>
+
+                        <div class="element-item"
+                            data-element-type="line"
+                            draggable="true">
+                            Línea
+                        </div>
+
+                        <div class="element-item"
+                            data-element-type="rectangle"
+                            draggable="true">
+                            Rectángulo
+                        </div>
+                    </div>
             </aside>
 
             <section id="canvas-panel">
