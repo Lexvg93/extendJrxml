@@ -25,46 +25,69 @@
         return Number.isFinite(number) ? number : fallback;
     }
 
-    function getElementData(element) {
+    
+function getElementData(element) {
 
-        const reportElement = getDirectChild(
-            element,
-            "reportElement"
-        );
+    const reportElement = getDirectChild(
+        element,
+        "reportElement"
+    );
 
-        const expressionElement =
-            getDirectChild(element, "textFieldExpression") ||
-            getDirectChild(element, "text") ||
-            getDirectChild(element, "imageExpression");
+    const textElement = getDirectChild(
+        element,
+        "text"
+    );
 
-        return {
-            type: element.localName,
+    const textFieldExpression = getDirectChild(
+        element,
+        "textFieldExpression"
+    );
 
-            x: reportElement
-                ? getAttributeNumber(reportElement, "x")
-                : 0,
+    const imageExpression = getDirectChild(
+        element,
+        "imageExpression"
+    );
 
-            y: reportElement
-                ? getAttributeNumber(reportElement, "y")
-                : 0,
+    const expressionElement =
+        textFieldExpression ||
+        textElement ||
+        imageExpression;
 
-            width: reportElement
-                ? getAttributeNumber(reportElement, "width")
-                : 0,
+    return {
+        type: element.localName,
 
-            height: reportElement
-                ? getAttributeNumber(reportElement, "height")
-                : 0,
+        x: reportElement
+            ? getAttributeNumber(reportElement, "x")
+            : 0,
 
-            uuid: reportElement
-                ? reportElement.getAttribute("uuid")
-                : null,
+        y: reportElement
+            ? getAttributeNumber(reportElement, "y")
+            : 0,
 
-            expression: expressionElement
-                ? expressionElement.textContent.trim()
-                : null
-        };
-    }
+        width: reportElement
+            ? getAttributeNumber(reportElement, "width")
+            : 0,
+
+        height: reportElement
+            ? getAttributeNumber(reportElement, "height")
+            : 0,
+
+        uuid: reportElement
+            ? reportElement.getAttribute("uuid")
+            : null,
+
+        // Contenido literal de staticText.
+        text: textElement
+            ? textElement.textContent
+            : null,
+
+        // Expresión original del elemento.
+        expression: expressionElement
+            ? expressionElement.textContent.trim()
+            : null
+    };
+}
+
 
     function parseBand(band) {
 

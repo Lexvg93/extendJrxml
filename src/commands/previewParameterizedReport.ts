@@ -39,8 +39,9 @@ export async function previewParameterizedReport(): Promise<void> {
         path.join(runtimeDir, 'lib', '*')
     ].join(path.delimiter);
 
-    const terminalJava =
-        'C:\\Users\\avalderr\\AppData\\Local\\Programs\\Eclipse Adoptium\\jdk-17.0.20.8-hotspot\\bin\\java.exe';
+    //const terminalJava =
+    //    'C:\\Users\\avalderr\\AppData\\Local\\Programs\\Eclipse Adoptium\\jdk-17.0.20.8-hotspot\\bin\\java.exe';
+    const terminalJava = '/Volumes/Alejandro/descargas/jdk-17.0.21+9/Contents/Home/bin/java';
 
     let rutaJson: string | undefined;
 

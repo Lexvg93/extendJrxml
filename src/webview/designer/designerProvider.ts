@@ -64,17 +64,22 @@ export class DesignerProvider
             vscode.Uri.joinPath(designerFolder, "jrxmlParser.js")
         );
 
+        const rendererUri = webview.asWebviewUri(
+            vscode.Uri.joinPath(designerFolder, "designerRenderer.js")
+        );
+
         const nonce = this.getNonce();
 
         webview.html = this.getHtml(
-    webview,
-    htmlUri,
-    cssUri,
-    parserUri,
-    scriptUri,
-    nonce,
-    document.fileName
-);
+            webview,
+            htmlUri,
+            cssUri,
+            parserUri,
+            rendererUri,
+            scriptUri,
+            nonce,
+            document.fileName
+        );
 
         const messageListener = webview.onDidReceiveMessage(
             async message => {
@@ -91,14 +96,155 @@ export class DesignerProvider
 
                         break;
 
-                    case "save":
+                    
+                    case "save": {
 
-                        webview.postMessage({
-                            command: "saveCompleted",
-                            message: "El guardado todavía no está implementado."
-                        });
+                        type DesignerElement = {
+                            type: string;
+                            uuid: string | null;
+                            x: number;
+                            y: number;
+                            width: number;
+                            height: number;
+                        };
+
+                        type DesignerBand = {
+                            height: number;
+                            elements: DesignerElement[];
+                        };
+
+                        type DesignerReport = {
+                            bands: Record<string, DesignerBand[]>;
+                        };
+
+                        const report = message.report as DesignerReport | undefined;
+
+                        if (!report || !report.bands) {
+
+                            webview.postMessage({
+                                command: "saveCompleted",
+                                message: "No se recibió un informe válido."
+                            });
+
+                            return;
+                        }
+
+                        try {
+
+                            // 1. Obtener el XML actual del documento.
+                            const originalXml = document.getText();
+
+                            let updatedXml = originalXml;
+
+                            // 2. Recorrer las bandas y sus elementos.
+                            for (const [bandName, bandList] of Object.entries(report.bands)) {
+
+                                for (const [bandIndex, band] of bandList.entries()) {
+
+                                    for (const element of band.elements) {
+
+                                        if (!element.uuid) {
+                                            throw new Error(
+                                                `El elemento ${element.type} de ${bandName} no tiene UUID.`
+                                            );
+                                        }
+
+                                        const properties = {
+                                            x: element.x,
+                                            y: element.y,
+                                            width: element.width,
+                                            height: element.height
+                                        };
+
+                                        // 3. Validar las propiedades geométricas.
+                                        for (const [property, value] of Object.entries(properties)) {
+
+                                            if (!Number.isInteger(value) || value < 0) {
+                                                throw new Error(
+                                                    `Valor inválido en ${property} para UUID ${element.uuid}.`
+                                                );
+                                            }
+                                        }
+
+                                        // 4. Actualizar el reportElement correspondiente.
+                                        updatedXml = this.updateReportElement(
+                                            updatedXml,
+                                            element.uuid,
+                                            properties
+                                        );
+
+                                        console.log(
+                                            "STARK Kraken: elemento preparado para guardar",
+                                            {
+                                                bandName,
+                                                bandIndex,
+                                                uuid: element.uuid,
+                                                ...properties
+                                            }
+                                        );
+                                    }
+                                }
+                            }
+
+                            // 5. Aplicar los cambios al documento mediante WorkspaceEdit.
+                            const edit = new vscode.WorkspaceEdit();
+
+                            edit.replace(
+                                document.uri,
+                                new vscode.Range(
+                                    document.positionAt(0),
+                                    document.positionAt(originalXml.length)
+                                ),
+                                updatedXml
+                            );
+
+                            const applied = await vscode.workspace.applyEdit(edit);
+
+                            if (!applied) {
+                                throw new Error(
+                                    "VS Code no pudo aplicar los cambios al documento."
+                                );
+                            }
+
+                            // 6. Guardar el archivo JRXML.
+                            const saved = await document.save();
+
+                            if (!saved) {
+                                throw new Error(
+                                    "No se pudo guardar el archivo JRXML."
+                                );
+                            }
+
+                            webview.postMessage({
+                                command: "saveCompleted",
+                                message: "¡Informe JRXML guardado correctamente!"
+                            });
+
+                            console.log(
+                                "STARK Kraken: informe guardado correctamente",
+                                document.fileName
+                            );
+
+                        } catch (error) {
+
+                            const errorMessage = error instanceof Error
+                                ? error.message
+                                : String(error);
+
+                            console.error(
+                                "STARK Kraken: error al guardar el informe",
+                                error
+                            );
+
+                            webview.postMessage({
+                                command: "saveCompleted",
+                                message: `Error al guardar: ${errorMessage}`
+                            });
+                        }
 
                         break;
+                    }
+
                 }
             }
         );
@@ -117,6 +263,7 @@ export class DesignerProvider
         htmlUri: vscode.Uri,
         cssUri: vscode.Uri,
         parserUri: vscode.Uri,
+        rendererUri: vscode.Uri,
         scriptUri: vscode.Uri,
         nonce: string,
         fileName: string
@@ -187,8 +334,8 @@ export class DesignerProvider
                 <div id="canvas-container">
 
                     <div id="report-page">
-                        <div id="report-title-band">
-                            <span>Title</span>
+                        <div id="report-bands">
+                            
                         </div>
                     </div>
 
@@ -208,12 +355,78 @@ export class DesignerProvider
 
     </div>
 
+    <script nonce="${nonce}" src="${parserUri}"></script>
+    <script nonce="${nonce}" src="${rendererUri}"></script>
     <script nonce="${nonce}" src="${scriptUri}"></script>
 
 </body>
 </html>`;
     }
 
+    private updateReportElement(
+        xml: string,
+        uuid: string,
+        properties: {
+            x: number;
+            y: number;
+            width: number;
+            height: number;
+        }
+    ): string {
+
+        const escapedUuid = uuid.replace(
+            /[.*+?^${}()|[\]\\]/g,
+            "\\$&"
+        );
+
+        const regex = new RegExp(
+            `<reportElement\\b(?=[^>]*\\buuid=["']${escapedUuid}["'])[^>]*\\/?>`
+        );
+
+        const matches = xml.match(regex);
+
+        if (!matches || matches.length !== 1) {
+            throw new Error(
+                `No se pudo localizar de forma única el elemento UUID: ${uuid}`
+            );
+        }
+
+        const updatedTag = matches[0];
+
+        const updatedAttributes = {
+            x: properties.x,
+            y: properties.y,
+            width: properties.width,
+            height: properties.height
+        };
+
+        let result = updatedTag;
+
+        for (const [attribute, value] of Object.entries(updatedAttributes)) {
+
+            const attributeRegex = new RegExp(
+                `\\b${attribute}=["'][^"']*["']`
+            );
+
+            if (attributeRegex.test(result)) {
+
+                result = result.replace(
+                    attributeRegex,
+                    `${attribute}="${value}"`
+                );
+
+            } else {
+
+                result = result.replace(
+                    /\/?>$/,
+                    ` ${attribute}="${value}"$&`
+                );
+
+            }
+        }
+
+        return xml.replace(updatedTag, result);
+    }
     private getNonce(): string {
 
         const characters =

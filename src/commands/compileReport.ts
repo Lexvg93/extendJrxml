@@ -91,6 +91,6 @@ export async function compileReport(): Promise<void>{
             `Error al compilar el informe. Código: ${codigo}. ` +
             (detalle || 'Consulta la consola de desarrollo.')
         );
-    })
+    });
     //vscode.window.showInformationMessage(`Informe seleccionado: ${archivoSeleccionado.fsPath}`);
 }

@@ -29,7 +29,8 @@ export async function generateParameterizedPdf(
     ].join(path.delimiter);
 
     const terminalJava =
-        'C:\\Users\\avalderr\\AppData\\Local\\Programs\\Eclipse Adoptium\\jdk-17.0.20.8-hotspot\\bin\\java.exe';
+        //'C:\\Users\\avalderr\\AppData\\Local\\Programs\\Eclipse Adoptium\\jdk-17.0.20.8-hotspot\\bin\\java.exe';
+        '/Volumes/Alejandro/descargas/jdk-17.0.21+9/Contents/Home/bin/java';
 
     let rutaJson: string | undefined;
 
