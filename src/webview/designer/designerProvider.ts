@@ -106,6 +106,7 @@ export class DesignerProvider
                             y: number;
                             width: number;
                             height: number;
+                            text?: string;
                         };
 
                         type DesignerBand = {
@@ -166,12 +167,40 @@ export class DesignerProvider
                                             }
                                         }
 
-                                        // 4. Actualizar el reportElement correspondiente.
-                                        updatedXml = this.updateReportElement(
-                                            updatedXml,
-                                            element.uuid,
-                                            properties
-                                        );
+                                        // 4. Comprobar si el elemento ya existe en el XML.
+                                        if (updatedXml.includes(element.uuid)) {
+
+                                            // Elemento existente: actualizar su geometría.
+                                            updatedXml = this.updateReportElement(
+                                                updatedXml,
+                                                element.uuid,
+                                                properties
+                                            );
+
+                                        } else if (element.type === "staticText") {
+
+                                            // Elemento nuevo: insertarlo dentro de su banda.
+                                            updatedXml = this.insertStaticTextElement(
+                                                updatedXml,
+                                                bandName,
+                                                bandIndex,
+                                                {
+                                                    uuid: element.uuid,
+                                                    x: element.x,
+                                                    y: element.y,
+                                                    width: element.width,
+                                                    height: element.height,
+                                                    text: element.text
+                                                }
+                                            );
+
+                                        } else {
+
+                                            // Todavía no soportamos la inserción de otros tipos.
+                                            throw new Error(
+                                                `Todavía no se puede guardar un elemento nuevo de tipo ${element.type}.`
+                                            );
+                                        }
 
                                         console.log(
                                             "STARK Kraken: elemento preparado para guardar",
@@ -392,6 +421,129 @@ export class DesignerProvider
 </html>`;
     }
 
+        private insertStaticTextElement(
+        xml: string,
+        bandName: string,
+        bandIndex: number,
+        element: {
+            uuid: string;
+            x: number;
+            y: number;
+            width: number;
+            height: number;
+            text?: string;
+        }
+    ): string {
+
+        // 1. Localizar la sección del informe.
+        const escapedBandName = bandName.replace(
+            /[.*+?^${}()|[\]\\]/g,
+            "\\$&"
+        );
+
+        const sectionRegex = new RegExp(
+            `<${escapedBandName}\\b[^>]*>([\\s\\S]*?)<\\/${escapedBandName}>`
+        );
+
+        const sectionMatch = xml.match(sectionRegex);
+
+        if (!sectionMatch) {
+            throw new Error(
+                `No se encontró la sección ${bandName} en el JRXML.`
+            );
+        }
+
+        const sectionContent = sectionMatch[1];
+
+        // 2. Localizar las bandas de esa sección.
+        const bandRegex = /<band\b[^>]*>[\s\S]*?<\/band>/g;
+
+        const bandMatches = Array.from(
+            sectionContent.matchAll(bandRegex)
+        );
+
+        const selectedBand = bandMatches[bandIndex];
+
+        if (!selectedBand || selectedBand.index === undefined) {
+            throw new Error(
+                `No se encontró la banda ${bandIndex} de ${bandName}.`
+            );
+        }
+
+        const bandXml = selectedBand[0];
+
+        // 3. Determinar la indentación del XML.
+        const indentationMatch = bandXml.match(
+            /(?:^|\r?\n)([ \t]*)<band\b/
+        );
+
+        const bandIndent = indentationMatch?.[1] ?? "\t";
+        const elementIndent = bandIndent + "\t";
+        const childIndent = elementIndent + "\t";
+
+        // 4. Escapar el texto para que sea XML válido.
+        const escapedText = (element.text ?? "")
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;");
+
+        // 5. Construir el nodo staticText.
+        const newElementXml = [
+            `${elementIndent}<staticText>`,
+            `${childIndent}<reportElement x="${element.x}" y="${element.y}" width="${element.width}" height="${element.height}" uuid="${element.uuid}"/>`,
+            `${childIndent}<text>${escapedText}</text>`,
+            `${elementIndent}</staticText>`
+        ].join("\n");
+
+        // 6. Insertar el nodo antes del cierre de la banda.
+        const closingTagIndex = bandXml.lastIndexOf("</band>");
+
+        const contentBeforeClosing = bandXml.slice(
+            0,
+            closingTagIndex
+        );
+
+        const trailingWhitespaceMatch = contentBeforeClosing.match(
+            /(\r?\n[ \t]*)$/
+        );
+
+        const trailingWhitespace =
+            trailingWhitespaceMatch?.[1] ?? `\n${bandIndent}`;
+
+        const existingContent = trailingWhitespaceMatch
+            ? contentBeforeClosing.slice(
+                0,
+                -trailingWhitespace.length
+            )
+            : contentBeforeClosing;
+
+        const updatedBandXml =
+            existingContent +
+            "\n" +
+            newElementXml +
+            trailingWhitespace +
+            "</band>";
+
+        // 7. Reconstruir la sección conservando las demás bandas.
+        const bandPosition = selectedBand.index;
+
+        const updatedSectionContent =
+            sectionContent.slice(0, bandPosition) +
+            updatedBandXml +
+            sectionContent.slice(
+                bandPosition + bandXml.length
+            );
+
+        const updatedSectionXml = sectionMatch[0].replace(
+            sectionContent,
+            updatedSectionContent
+        );
+
+        return xml.replace(
+            sectionMatch[0],
+            updatedSectionXml
+        );
+    }
     private updateReportElement(
         xml: string,
         uuid: string,
