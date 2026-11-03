@@ -168,15 +168,17 @@
         }
 
         ${
-          elementData.type !== "staticText" &&
-          elementData.expression !== null &&
-          elementData.expression !== undefined
+          elementData.type === "textField"
             ? `
-                    <div class="property-section">
-                        <h3>EXPRESIÓN</h3>
-                        <div>${elementData.expression}</div>
-                    </div>
-                `
+            <div class="property-section">
+                <h3>EXPRESIÓN</h3>
+                <textarea
+                    id="element-expression"
+                    rows="3"
+                    placeholder="Introduce una expresión JasperReports..."
+                ></textarea>
+            </div>
+        `
             : ""
         }
     `;
@@ -206,6 +208,34 @@
 
         console.log("STARK Kraken: texto actualizado", selectedElementData.text);
     });
+    }
+
+
+        const expressionInput = document.getElementById("element-expression");
+
+    if (expressionInput) {
+        expressionInput.value = elementData.expression || "";
+
+        expressionInput.addEventListener("input", () => {
+            selectedElementData.expression = expressionInput.value;
+
+            const renderedElement = Array.from(
+                document.querySelectorAll(".jr-element")
+            ).find(
+                element => element.dataset.uuid === selectedElementData.uuid
+            );
+
+            if (renderedElement) {
+                const displayExpression =
+                    selectedElementData.expression || "Campo de texto";
+
+                if (renderedElement.firstChild?.nodeType === Node.TEXT_NODE) {
+                    renderedElement.firstChild.nodeValue = displayExpression;
+                }
+
+                renderedElement.title = displayExpression;
+            }
+        });
     }
     // ESCUCHAR CAMBIOS EN LAS PROPIEDADES GEOMÉTRICAS
     const geometryFields = [
@@ -430,8 +460,11 @@ bandsContainer.addEventListener("drop", event => {
         "application/stark-element"
     );
 
-    // Por ahora solo permitimos Texto estático.
-    if (elementType !== "staticText" || !currentReport) {
+    // Permitir los tipos de elementos actualmente soportados.
+    if (
+        !["staticText", "textField"].includes(elementType) ||
+        !currentReport
+    ) {
         return;
     }
 
@@ -480,15 +513,16 @@ bandsContainer.addEventListener("drop", event => {
     );
 
     // Crear el objeto del informe.
+    // Crear el objeto del informe según su tipo.
     const newElement = {
-        type: "staticText",
+        type: elementType,
         uuid: crypto.randomUUID(),
         x: x,
         y: y,
         width: width,
         height: height,
-        text: "Texto estático",
-        expression: null
+        text: elementType === "staticText" ? "Texto estático" : null,
+        expression: elementType === "textField" ? "" : null
     };
 
     // Incorporarlo al modelo del informe.

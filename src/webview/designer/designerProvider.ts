@@ -107,6 +107,7 @@ export class DesignerProvider
                             width: number;
                             height: number;
                             text?: string;
+                            expression?: string | null;
                         };
 
                         type DesignerBand = {
@@ -176,8 +177,26 @@ export class DesignerProvider
                                                 element.uuid,
                                                 properties
                                             );
+                                            // Si es un staticText, actualizar también su contenido.
+                                            if (element.type === "staticText") {
 
-                                        } else if (element.type === "staticText") {
+                                                updatedXml = this.updateStaticTextContent(
+                                                    updatedXml,
+                                                    element.uuid,
+                                                    element.text ?? ""
+                                                );
+                                            }
+                                            // Si es un textField, actualizar también su expresión.
+                                            if (element.type === "textField") {
+
+                                                updatedXml = this.updateTextFieldExpression(
+                                                    updatedXml,
+                                                    element.uuid,
+                                                    element.expression ?? ""
+                                                );
+                                            }
+
+                                        }else if (element.type === "staticText") {
 
                                             // Elemento nuevo: insertarlo dentro de su banda.
                                             updatedXml = this.insertStaticTextElement(
@@ -191,6 +210,23 @@ export class DesignerProvider
                                                     width: element.width,
                                                     height: element.height,
                                                     text: element.text
+                                                }
+                                            );
+
+                                        } else if (element.type === "textField") {
+
+                                            // Elemento nuevo: insertarlo dentro de su banda.
+                                            updatedXml = this.insertTextFieldElement(
+                                                updatedXml,
+                                                bandName,
+                                                bandIndex,
+                                                {
+                                                    uuid: element.uuid,
+                                                    x: element.x,
+                                                    y: element.y,
+                                                    width: element.width,
+                                                    height: element.height,
+                                                    expression: element.expression
                                                 }
                                             );
 
@@ -544,6 +580,129 @@ export class DesignerProvider
             updatedSectionXml
         );
     }
+        private insertTextFieldElement(
+        xml: string,
+        bandName: string,
+        bandIndex: number,
+        element: {
+            uuid: string;
+            x: number;
+            y: number;
+            width: number;
+            height: number;
+            expression?: string | null;
+        }
+    ): string {
+
+        // 1. Localizar la sección del informe.
+        const escapedBandName = bandName.replace(
+            /[.*+?^${}()|[\]\\]/g,
+            "\\$&"
+        );
+
+        const sectionRegex = new RegExp(
+            `<${escapedBandName}\\b[^>]*>([\\s\\S]*?)<\\/${escapedBandName}>`
+        );
+
+        const sectionMatch = xml.match(sectionRegex);
+
+        if (!sectionMatch) {
+            throw new Error(
+                `No se encontró la sección ${bandName} en el JRXML.`
+            );
+        }
+
+        const sectionContent = sectionMatch[1];
+
+        // 2. Localizar las bandas de esa sección.
+        const bandRegex = /<band\b[^>]*>[\s\S]*?<\/band>/g;
+
+        const bandMatches = Array.from(
+            sectionContent.matchAll(bandRegex)
+        );
+
+        const selectedBand = bandMatches[bandIndex];
+
+        if (!selectedBand || selectedBand.index === undefined) {
+            throw new Error(
+                `No se encontró la banda ${bandIndex} de ${bandName}.`
+            );
+        }
+
+        const bandXml = selectedBand[0];
+
+        // 3. Determinar la indentación.
+        const indentationMatch = bandXml.match(
+            /(?:^|\r?\n)([ \t]*)<band\b/
+        );
+
+        const bandIndent = indentationMatch?.[1] ?? "\t";
+        const elementIndent = bandIndent + "\t";
+        const childIndent = elementIndent + "\t";
+
+        // 4. Preparar la expresión CDATA.
+        const safeExpression = (element.expression ?? "").replace(
+            /\]\]>/g,
+            "]]]]><![CDATA[>"
+        );
+
+        // 5. Construir el nodo textField.
+        const newElementXml = [
+            `${elementIndent}<textField>`,
+            `${childIndent}<reportElement x="${element.x}" y="${element.y}" width="${element.width}" height="${element.height}" uuid="${element.uuid}"/>`,
+            `${childIndent}<textFieldExpression><![CDATA[${safeExpression}]]></textFieldExpression>`,
+            `${elementIndent}</textField>`
+        ].join("\n");
+
+        // 6. Insertar antes del cierre de la banda.
+        const closingTagIndex = bandXml.lastIndexOf("</band>");
+
+        const contentBeforeClosing = bandXml.slice(
+            0,
+            closingTagIndex
+        );
+
+        const trailingWhitespaceMatch = contentBeforeClosing.match(
+            /(\r?\n[ \t]*)$/
+        );
+
+        const trailingWhitespace =
+            trailingWhitespaceMatch?.[1] ?? `\n${bandIndent}`;
+
+        const existingContent = trailingWhitespaceMatch
+            ? contentBeforeClosing.slice(
+                0,
+                -trailingWhitespace.length
+            )
+            : contentBeforeClosing;
+
+        const updatedBandXml =
+            existingContent +
+            "\n" +
+            newElementXml +
+            trailingWhitespace +
+            "</band>";
+
+        // 7. Reconstruir la sección.
+        const bandPosition = selectedBand.index;
+
+        const updatedSectionContent =
+            sectionContent.slice(0, bandPosition) +
+            updatedBandXml +
+            sectionContent.slice(
+                bandPosition + bandXml.length
+            );
+
+        const updatedSectionXml = sectionMatch[0].replace(
+            sectionContent,
+            updatedSectionContent
+        );
+
+        return xml.replace(
+            sectionMatch[0],
+            updatedSectionXml
+        );
+    }
     private updateReportElement(
         xml: string,
         uuid: string,
@@ -608,6 +767,209 @@ export class DesignerProvider
 
         return xml.replace(updatedTag, result);
     }
+
+        private updateTextFieldExpression(
+        xml: string,
+        uuid: string,
+        expression: string
+    ): string {
+
+        const escapedUuid = uuid.replace(
+            /[.*+?^${}()|[\]\\]/g,
+            "\\$&"
+        );
+
+        // 1. Localizar el bloque textField que contiene el UUID.
+        const textFieldRegex = /<textField\b[^>]*>[\s\S]*?<\/textField>/g;
+
+        const textFields = Array.from(xml.matchAll(textFieldRegex));
+
+        const matchingFields = textFields.filter(match => {
+
+            const fieldXml = match[0];
+
+            const reportElementRegex = new RegExp(
+                `<reportElement\\b(?=[^>]*\\buuid=["']${escapedUuid}["'])[^>]*\\/?>`
+            );
+
+            return reportElementRegex.test(fieldXml);
+        });
+
+        if (matchingFields.length !== 1) {
+            throw new Error(
+                `No se encontró un textField único para el UUID: ${uuid}`
+            );
+        }
+
+        const originalFieldXml = matchingFields[0][0];
+
+        // 2. Preparar la expresión dentro de CDATA.
+        const safeExpression = expression.replace(
+            /\]\]>/g,
+            "]]]]><![CDATA[>"
+        );
+
+        const expressionXml =
+            `<textFieldExpression><![CDATA[${safeExpression}]]></textFieldExpression>`;
+
+        // 3. Comprobar si ya existe textFieldExpression.
+        const expressionRegex =
+            /<textFieldExpression\b[^>]*>[\s\S]*?<\/textFieldExpression>/g;
+
+        const existingExpressions = Array.from(
+            originalFieldXml.matchAll(expressionRegex)
+        );
+
+        let updatedFieldXml: string;
+
+        if (existingExpressions.length > 1) {
+
+            throw new Error(
+                `El textField ${uuid} contiene varias expresiones.`
+            );
+
+        } else if (existingExpressions.length === 1) {
+
+            // 4. Sustituir la expresión existente.
+            updatedFieldXml = originalFieldXml.replace(
+                existingExpressions[0][0],
+                expressionXml
+            );
+
+        } else {
+
+            // 5. Si no existe, localizar reportElement.
+            const reportElementRegex = new RegExp(
+                `<reportElement\\b(?=[^>]*\\buuid=["']${escapedUuid}["'])[^>]*\\/?>`
+            );
+
+            const reportElementMatch =
+                originalFieldXml.match(reportElementRegex);
+
+            if (!reportElementMatch) {
+                throw new Error(
+                    `No se encontró reportElement para el UUID: ${uuid}`
+                );
+            }
+
+            // 6. Insertar textFieldExpression después de reportElement.
+            updatedFieldXml = originalFieldXml.replace(
+                reportElementMatch[0],
+                reportElementMatch[0] + "\n" + expressionXml
+            );
+        }
+
+        // 7. Reconstruir el XML conservando el resto del documento.
+        return xml.replace(
+            originalFieldXml,
+            updatedFieldXml
+        );
+    }
+
+    private updateStaticTextContent(
+    xml: string,
+    uuid: string,
+    text: string
+): string {
+
+    const escapedUuid = uuid.replace(
+        /[.*+?^${}()|[\]\\]/g,
+        "\\$&"
+    );
+
+    // 1. Localizar todos los bloques staticText.
+    const staticTextRegex =
+        /<staticText\b[^>]*>[\s\S]*?<\/staticText>/g;
+
+    const staticTexts = Array.from(
+        xml.matchAll(staticTextRegex)
+    );
+
+    // 2. Identificar el staticText que contiene nuestro UUID.
+    const matchingElements = staticTexts.filter(match => {
+
+        const elementXml = match[0];
+
+        const reportElementRegex = new RegExp(
+            `<reportElement\\b(?=[^>]*\\buuid=["']${escapedUuid}["'])[^>]*\\/?>`
+        );
+
+        return reportElementRegex.test(elementXml);
+    });
+
+    if (matchingElements.length !== 1) {
+        throw new Error(
+            `No se encontró un staticText único para el UUID: ${uuid}`
+        );
+    }
+
+    const originalElementXml = matchingElements[0][0];
+
+    // 3. Preparar el texto dentro de CDATA.
+    const safeText = text.replace(
+        /\]\]>/g,
+        "]]]]><![CDATA[>"
+    );
+
+    const textXml = `<![CDATA[${safeText}]]>`;
+
+    // 4. Comprobar si ya existe la etiqueta text.
+    const textRegex =
+        /(<text\b[^>]*>)[\s\S]*?(<\/text>)/g;
+
+    const existingTexts = Array.from(
+        originalElementXml.matchAll(textRegex)
+    );
+
+    let updatedElementXml: string;
+
+    if (existingTexts.length > 1) {
+
+        throw new Error(
+            `El staticText ${uuid} contiene varias etiquetas text.`
+        );
+
+    } else if (existingTexts.length === 1) {
+
+        // 5. Sustituir el contenido conservando las etiquetas.
+        const existingText = existingTexts[0];
+
+        updatedElementXml = originalElementXml.replace(
+            existingText[0],
+            `${existingText[1]}${textXml}${existingText[2]}`
+        );
+
+    } else {
+
+        // 6. Si no existe text, localizar reportElement.
+        const reportElementRegex = new RegExp(
+            `<reportElement\\b(?=[^>]*\\buuid=["']${escapedUuid}["'])[^>]*\\/?>`
+        );
+
+        const reportElementMatch =
+            originalElementXml.match(reportElementRegex);
+
+        if (!reportElementMatch) {
+            throw new Error(
+                `No se encontró reportElement para el UUID: ${uuid}`
+            );
+        }
+
+        // 7. Insertar text después de reportElement.
+        updatedElementXml = originalElementXml.replace(
+            reportElementMatch[0],
+            reportElementMatch[0] +
+            `\n<text>${textXml}</text>`
+        );
+    }
+
+    // 8. Reconstruir el XML sin alterar los demás elementos.
+    return xml.replace(
+        originalElementXml,
+        updatedElementXml
+    );
+}
+
     private getNonce(): string {
 
         const characters =
